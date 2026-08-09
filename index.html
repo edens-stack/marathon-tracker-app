@@ -1,0 +1,81 @@
+<!--
+  index.html
+  ----------
+  The SKELETON of the app — the header, the progress bar, the stat tiles,
+  and an empty <main> that app.js fills in with a card per training week
+  (pulling the actual schedule from plan.js).
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marathon Tracker</title>
+
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Emoji favicon — quick tab recognition, no image file needed. -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏃</text></svg>" />
+</head>
+<body>
+
+  <div class="page">
+
+    <!-- ===== HEADER ===== -->
+    <header class="header">
+      <div class="brand">
+        <span class="brand-icon">🏃‍♂️</span>
+        <div>
+          <h1 class="brand-name">Marathon Tracker</h1>
+          <p class="brand-sub">24-week training plan</p>
+        </div>
+      </div>
+
+      <!-- Big progress bar — width + label are set by app.js. -->
+      <div class="progress-block">
+        <div class="progress-labels">
+          <span id="progressPct" class="progress-pct">0%</span>
+          <span id="progressRuns" class="progress-runs">0 / 72 runs</span>
+        </div>
+        <div class="progress-track">
+          <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Stat tiles — filled in by app.js. -->
+      <div class="stats-row">
+        <div class="stat-tile">
+          <span id="statMiles" class="stat-value">0</span>
+          <span class="stat-label">miles logged</span>
+        </div>
+        <div class="stat-tile">
+          <span id="statWeeksDone" class="stat-value">0 / 24</span>
+          <span class="stat-label">weeks complete</span>
+        </div>
+        <div class="stat-tile">
+          <span id="statStreak" class="stat-value">0</span>
+          <span class="stat-label">week streak</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <!-- app.js builds one .week-card per entry in TRAINING_PLAN (plan.js)
+         and inserts them all here. -->
+    <main id="weeksContainer" class="weeks-grid"></main>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer">
+      <button id="resetBtn" class="reset-link" type="button">Reset all progress</button>
+    </footer>
+
+  </div>
+
+  <!-- A quiet toast that pops up on milestones ("Week 3 complete! 🎉"). -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- plan.js (the data) loads before app.js (the logic that uses it). -->
+  <script src="plan.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

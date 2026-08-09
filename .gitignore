@@ -1,0 +1,3 @@
+# .gitignore
+# macOS creates this invisible file in almost every folder — nobody else needs it.
+.DS_Store
