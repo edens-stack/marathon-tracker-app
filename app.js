@@ -7,7 +7,10 @@
   progress bar / stat tiles / toasts / confetti whenever something changes.
 */
 
-const STORAGE_KEY = 'marathonTracker.progress.v1';
+// Bumped to v2 because the plan structure changed (mile-based runs ->
+// time/speed-based sessions) — old v1 ticks wouldn't map onto the new
+// sessions correctly, so this intentionally starts everyone fresh.
+const STORAGE_KEY = 'marathonTracker.progress.v2';
 
 // { "1-0": true, "1-2": true, ... }  — keyed by "week-runIndex"
 let completed = loadProgress();
@@ -117,7 +120,6 @@ function isWeekComplete(week) {
 function computeStats() {
   let runsDone = 0;
   let runsTotal = 0;
-  let milesDone = 0;
   let weeksDone = 0;
 
   TRAINING_PLAN.forEach((weekData) => {
@@ -128,7 +130,6 @@ function computeStats() {
       const done = !!completed[runKey(weekData.week, index)];
       if (done) {
         runsDone += 1;
-        if (run.miles) milesDone += run.miles;
       } else {
         weekAllDone = false;
       }
@@ -161,7 +162,7 @@ function computeStats() {
     });
   }
 
-  return { runsDone, runsTotal, milesDone, weeksDone, weeksTotal: TRAINING_PLAN.length, streak };
+  return { runsDone, runsTotal, weeksDone, weeksTotal: TRAINING_PLAN.length, streak };
 }
 
 function refreshUI() {
@@ -170,9 +171,9 @@ function refreshUI() {
 
   document.getElementById('progressFill').style.width = `${pct}%`;
   document.getElementById('progressPct').textContent = `${pct}%`;
-  document.getElementById('progressRuns').textContent = `${stats.runsDone} / ${stats.runsTotal} runs`;
-  document.getElementById('statMiles').textContent = stats.milesDone.toFixed(1).replace(/\.0$/, '');
+  document.getElementById('progressRuns').textContent = `${stats.runsDone} / ${stats.runsTotal} sessions`;
   document.getElementById('statWeeksDone').textContent = `${stats.weeksDone} / ${stats.weeksTotal}`;
+  document.getElementById('statSessions').textContent = `${stats.runsDone} / ${stats.runsTotal}`;
   document.getElementById('statStreak').textContent = stats.streak;
 
   // Update every run row + week card to reflect current state.

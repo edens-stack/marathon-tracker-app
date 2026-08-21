@@ -29,6 +29,7 @@
   --slot-aqua:    #21c894;   /* Easy */
   --slot-yellow:  #e6a916;   /* Tempo */
   --slot-red:     #ef5b5b;   /* Race Day */
+  --slot-violet:  #9085e9;   /* Leg Strength */
   --slot-neutral: #8b90a0;   /* plain Run */
 
   /* ---- status ---- */
@@ -286,6 +287,7 @@ body {
 .run-badge.slot-aqua    { background: rgba(33,200,148,0.16);  color: var(--slot-aqua); }
 .run-badge.slot-yellow  { background: rgba(230,169,22,0.16);  color: var(--slot-yellow); }
 .run-badge.slot-red     { background: rgba(239,91,91,0.16);   color: var(--slot-red); }
+.run-badge.slot-violet  { background: rgba(144,133,233,0.16); color: var(--slot-violet); }
 .run-badge.slot-neutral { background: rgba(139,144,160,0.16); color: var(--slot-neutral); }
 
 /* ===================== FOOTER / TOAST ===================== */

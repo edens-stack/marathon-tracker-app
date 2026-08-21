@@ -1,8 +1,9 @@
 # 🏃‍♂️ Marathon Tracker
 
-A simple, slick tracker for a 24-week marathon training plan — tick off each
-run, watch the progress bar fill up, and keep an eye on total miles, weeks
-completed, and your current streak.
+A simple, slick tracker for a 27-week marathon training plan — tick off each
+session (outdoor run, indoor easy run, indoor tempo run, leg strength), watch
+the progress bar fill up, and keep an eye on weeks completed, sessions done,
+and your current streak.
 
 No build step, no dependencies — just `index.html`, `style.css`, `plan.js`
 (the training data) and `app.js` (the logic). Open `index.html` in a browser

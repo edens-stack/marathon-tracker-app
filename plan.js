@@ -1,151 +1,206 @@
 /*
   plan.js
   -------
-  This is just DATA — your 24-week marathon training plan, written out as
-  a plain JavaScript array. Nothing in this file "does" anything by itself;
-  app.js reads this array to build the page and track your progress.
+  This is just DATA — your 27-week training plan, written out as a plain
+  JavaScript array. Nothing in this file "does" anything by itself; app.js
+  reads this array to build the page and track your progress.
 
-  Each week has 3 runs. Each run has:
-    - label : what's shown on the page (e.g. "6 mi Long Run")
-    - type  : one of 'run' | 'easy' | 'pace' | 'tempo' | 'long' | 'race'
+  Each week has 4 sessions: one outdoor run (time only, no fixed pace),
+  one indoor easy treadmill run, one indoor tempo run, and one leg strength
+  session. (Dates are left out on purpose — the plan is tracked purely by
+  week number.)
+
+  Each session has:
+    - label : what's shown on the page (e.g. "1h 10m @ 8.0 km/h")
+    - type  : one of 'outdoor' | 'easy' | 'tempo' | 'strength'
               (this controls the colour of the little badge next to it)
-    - miles : the distance in miles, used for the "miles completed" stat.
-              Time-based sessions (e.g. "30 min Tempo") have miles: null —
-              they still count toward your run total, just not your mileage.
 
-  Want to edit your plan? Just change the numbers/labels below — the rest
-  of the app rebuilds itself automatically from this list.
+  Want to edit your plan? Just change the labels below — the rest of the
+  app rebuilds itself automatically from this list.
+
+  Notes from the plan this was built from:
+    - Indoor easy run builds to 2h by week 11, then holds each speed for
+      2 weeks before the next 0.2 km/h bump (open-ended after week 27).
+    - Indoor tempo run cycles 15/20-45 min in 5-min steps, resetting to
+      +1 km/h each time it hits 45 min (open-ended after week 27).
+    - Outdoor run: +5 min/week to 1h30, then +10 min/week to 3h, then
+      +30 min/week to 4h.
+    - Leg strength: 1 session/week, day/placement flexible — separate
+      from the existing 2x/week upper body work (not tracked here).
+    - Cross-training (e.g. cycling) is optional and not tracked here —
+      use it on an easy/rest day rather than adding volume.
 */
 
 const TRAINING_PLAN = [
-  { week: 1, runs: [
-    { label: '3 mi', type: 'easy', miles: 3 },
-    { label: '3 mi Pace', type: 'pace', miles: 3 },
-    { label: '6 mi Long Run', type: 'long', miles: 6 },
+  { week: 1,  runs: [
+    { label: '15 min', type: 'outdoor' },
+    { label: '1h 10m @ 8.0 km/h', type: 'easy' },
+    { label: '20 min @ 10.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
-  { week: 2, runs: [
-    { label: '4 mi', type: 'easy', miles: 4 },
-    { label: '30 min Tempo', type: 'tempo', miles: null },
-    { label: '7 mi Long Run', type: 'long', miles: 7 },
+  { week: 2,  runs: [
+    { label: '20 min', type: 'outdoor' },
+    { label: '1h 15m @ 8.0 km/h', type: 'easy' },
+    { label: '25 min @ 10.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
-  { week: 3, runs: [
-    { label: '3 mi', type: 'easy', miles: 3 },
-    { label: '3 mi Easy', type: 'easy', miles: 3 },
-    { label: '5 mi Long Run', type: 'long', miles: 5 },
+  { week: 3,  runs: [
+    { label: '25 min', type: 'outdoor' },
+    { label: '1h 20m @ 8.0 km/h', type: 'easy' },
+    { label: '30 min @ 10.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
-  { week: 4, runs: [
-    { label: '5 mi', type: 'easy', miles: 5 },
-    { label: '3 mi Pace', type: 'pace', miles: 3 },
-    { label: '9 mi Long Run', type: 'long', miles: 9 },
+  { week: 4,  runs: [
+    { label: '30 min', type: 'outdoor' },
+    { label: '1h 25m @ 8.0 km/h', type: 'easy' },
+    { label: '35 min @ 10.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
-  { week: 5, runs: [
-    { label: '5 mi', type: 'easy', miles: 5 },
-    { label: '35 min Tempo', type: 'tempo', miles: null },
-    { label: '10 mi Long Run', type: 'long', miles: 10 },
+  { week: 5,  runs: [
+    { label: '35 min', type: 'outdoor' },
+    { label: '1h 30m @ 8.0 km/h', type: 'easy' },
+    { label: '40 min @ 10.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
-  { week: 6, runs: [
-    { label: '4 mi', type: 'easy', miles: 4 },
-    { label: '4 mi Easy', type: 'easy', miles: 4 },
-    { label: '8 mi Long Run', type: 'long', miles: 8 },
+  { week: 6,  runs: [
+    { label: '40 min', type: 'outdoor' },
+    { label: '1h 35m @ 8.0 km/h', type: 'easy' },
+    { label: '45 min @ 10.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
-  { week: 7, runs: [
-    { label: '6 mi', type: 'easy', miles: 6 },
-    { label: '4 mi Pace', type: 'pace', miles: 4 },
-    { label: '12 mi Long Run', type: 'long', miles: 12 },
+  { week: 7,  runs: [
+    { label: '45 min', type: 'outdoor' },
+    { label: '1h 40m @ 8.0 km/h', type: 'easy' },
+    { label: '15 min @ 11.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
-  { week: 8, runs: [
-    { label: '7 mi', type: 'easy', miles: 7 },
-    { label: '40 min Tempo', type: 'tempo', miles: null },
-    { label: '13 mi Long Run', type: 'long', miles: 13 },
+  { week: 8,  runs: [
+    { label: '50 min', type: 'outdoor' },
+    { label: '1h 45m @ 8.0 km/h', type: 'easy' },
+    { label: '20 min @ 11.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
-  { week: 9, runs: [
-    { label: '5 mi', type: 'easy', miles: 5 },
-    { label: '5 mi Easy', type: 'easy', miles: 5 },
-    { label: '5k Tempo', type: 'tempo', miles: 3.1 },
+  { week: 9,  runs: [
+    { label: '55 min', type: 'outdoor' },
+    { label: '1h 50m @ 8.0 km/h', type: 'easy' },
+    { label: '25 min @ 11.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 10, runs: [
-    { label: '7 mi', type: 'easy', miles: 7 },
-    { label: '4 mi Pace', type: 'pace', miles: 4 },
-    { label: '15 mi Long Run', type: 'long', miles: 15 },
+    { label: '1h', type: 'outdoor' },
+    { label: '1h 55m @ 8.0 km/h', type: 'easy' },
+    { label: '30 min @ 11.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 11, runs: [
-    { label: '8 mi', type: 'easy', miles: 8 },
-    { label: '45 min Tempo', type: 'tempo', miles: null },
-    { label: '16 mi Long Run', type: 'long', miles: 16 },
+    { label: '1h 5m', type: 'outdoor' },
+    { label: '2h @ 8.0 km/h', type: 'easy' },
+    { label: '35 min @ 11.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 12, runs: [
-    { label: '6 mi', type: 'easy', miles: 6 },
-    { label: '5 mi Easy', type: 'easy', miles: 5 },
-    { label: '12 mi Long Run', type: 'long', miles: 12 },
+    { label: '1h 10m', type: 'outdoor' },
+    { label: '2h @ 8.0 km/h', type: 'easy' },
+    { label: '40 min @ 11.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 13, runs: [
-    { label: '8 mi', type: 'easy', miles: 8 },
-    { label: '5 mi Pace', type: 'pace', miles: 5 },
-    { label: '18 mi Long Run', type: 'long', miles: 18 },
+    { label: '1h 15m', type: 'outdoor' },
+    { label: '2h @ 8.2 km/h', type: 'easy' },
+    { label: '45 min @ 11.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 14, runs: [
-    { label: '9 mi', type: 'easy', miles: 9 },
-    { label: '50 min Tempo', type: 'tempo', miles: null },
-    { label: '19 mi Long Run', type: 'long', miles: 19 },
+    { label: '1h 20m', type: 'outdoor' },
+    { label: '2h @ 8.2 km/h', type: 'easy' },
+    { label: '15 min @ 12.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 15, runs: [
-    { label: '6 mi', type: 'easy', miles: 6 },
-    { label: '6 mi Easy', type: 'easy', miles: 6 },
-    { label: '14 mi Long Run', type: 'long', miles: 14 },
+    { label: '1h 25m', type: 'outdoor' },
+    { label: '2h @ 8.4 km/h', type: 'easy' },
+    { label: '20 min @ 12.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 16, runs: [
-    { label: '10 mi', type: 'easy', miles: 10 },
-    { label: '5 mi Pace', type: 'pace', miles: 5 },
-    { label: '20 mi Long Run', type: 'long', miles: 20 },
+    { label: '1h 30m', type: 'outdoor' },
+    { label: '2h @ 8.4 km/h', type: 'easy' },
+    { label: '25 min @ 12.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 17, runs: [
-    { label: '10 mi', type: 'easy', miles: 10 },
-    { label: '55 min Tempo', type: 'tempo', miles: null },
-    { label: '20 mi Long Run', type: 'long', miles: 20 },
+    { label: '1h 40m', type: 'outdoor' },
+    { label: '2h @ 8.6 km/h', type: 'easy' },
+    { label: '30 min @ 12.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 18, runs: [
-    { label: '7 mi', type: 'easy', miles: 7 },
-    { label: '6 mi Easy', type: 'easy', miles: 6 },
-    { label: '15 mi Long Run', type: 'long', miles: 15 },
+    { label: '1h 50m', type: 'outdoor' },
+    { label: '2h @ 8.6 km/h', type: 'easy' },
+    { label: '35 min @ 12.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 19, runs: [
-    { label: '10 mi', type: 'easy', miles: 10 },
-    { label: '5 mi Pace', type: 'pace', miles: 5 },
-    { label: '20 mi Long Run', type: 'long', miles: 20 },
+    { label: '2h', type: 'outdoor' },
+    { label: '2h @ 8.8 km/h', type: 'easy' },
+    { label: '40 min @ 12.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 20, runs: [
-    { label: '8 mi', type: 'easy', miles: 8 },
-    { label: '60 min Tempo', type: 'tempo', miles: null },
-    { label: '12 mi Long Run', type: 'long', miles: 12 },
+    { label: '2h 10m', type: 'outdoor' },
+    { label: '2h @ 8.8 km/h', type: 'easy' },
+    { label: '45 min @ 12.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 21, runs: [
-    { label: '8 mi', type: 'easy', miles: 8 },
-    { label: '5 mi Easy', type: 'easy', miles: 5 },
-    { label: '20 mi Long Run', type: 'long', miles: 20 },
+    { label: '2h 20m', type: 'outdoor' },
+    { label: '2h @ 9.0 km/h', type: 'easy' },
+    { label: '15 min @ 13.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 22, runs: [
-    { label: '6 mi', type: 'easy', miles: 6 },
-    { label: '4 mi Pace', type: 'pace', miles: 4 },
-    { label: '12 mi Long Run', type: 'long', miles: 12 },
+    { label: '2h 30m', type: 'outdoor' },
+    { label: '2h @ 9.0 km/h', type: 'easy' },
+    { label: '20 min @ 13.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 23, runs: [
-    { label: '5 mi', type: 'easy', miles: 5 },
-    { label: '30 min Tempo', type: 'tempo', miles: null },
-    { label: '8 mi Long Run', type: 'long', miles: 8 },
+    { label: '2h 40m', type: 'outdoor' },
+    { label: '2h @ 9.2 km/h', type: 'easy' },
+    { label: '25 min @ 13.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 24, runs: [
-    { label: '3 mi', type: 'easy', miles: 3 },
-    { label: '2 mi Easy', type: 'easy', miles: 2 },
-    { label: 'Marathon Race (26.2 mi)', type: 'race', miles: 26.2 },
+    { label: '2h 50m', type: 'outdoor' },
+    { label: '2h @ 9.2 km/h', type: 'easy' },
+    { label: '30 min @ 13.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
+  ]},
+  { week: 25, runs: [
+    { label: '3h', type: 'outdoor' },
+    { label: '2h @ 9.4 km/h', type: 'easy' },
+    { label: '35 min @ 13.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
+  ]},
+  { week: 26, runs: [
+    { label: '3h 30m', type: 'outdoor' },
+    { label: '2h @ 9.4 km/h', type: 'easy' },
+    { label: '40 min @ 13.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
+  ]},
+  { week: 27, runs: [
+    { label: '4h', type: 'outdoor' },
+    { label: '2h @ 9.6 km/h', type: 'easy' },
+    { label: '45 min @ 13.0 km/h', type: 'tempo' },
+    { label: 'Leg strength session', type: 'strength' },
   ]},
 ];
 
-// Human-readable badge text + which colour "slot" each run type uses.
+// Human-readable badge text + which colour "slot" each session type uses.
 // (app.js/style.css read TYPE_META[run.type] to render the little pill.)
 const TYPE_META = {
-  easy:  { badge: 'Easy',      slot: 'aqua'    },
-  pace:  { badge: 'Pace',      slot: 'orange'  },
-  tempo: { badge: 'Tempo',     slot: 'yellow'  },
-  long:  { badge: 'Long Run',  slot: 'blue'    },
-  race:  { badge: 'Race Day',  slot: 'red'     },
+  outdoor:  { badge: 'Outdoor Run',   slot: 'blue'   },
+  easy:     { badge: 'Indoor Easy',   slot: 'aqua'   },
+  tempo:    { badge: 'Indoor Tempo',  slot: 'yellow' },
+  strength: { badge: 'Leg Strength',  slot: 'violet' },
 };

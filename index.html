@@ -27,7 +27,7 @@
         <span class="brand-icon">🏃‍♂️</span>
         <div>
           <h1 class="brand-name">Marathon Tracker</h1>
-          <p class="brand-sub">24-week training plan</p>
+          <p class="brand-sub">27-week training plan</p>
         </div>
       </div>
 
@@ -35,22 +35,23 @@
       <div class="progress-block">
         <div class="progress-labels">
           <span id="progressPct" class="progress-pct">0%</span>
-          <span id="progressRuns" class="progress-runs">0 / 72 runs</span>
+          <span id="progressRuns" class="progress-runs">0 / 108 sessions</span>
         </div>
         <div class="progress-track">
           <div id="progressFill" class="progress-fill" style="width: 0%"></div>
         </div>
       </div>
 
-      <!-- Stat tiles — filled in by app.js. -->
+      <!-- Stat tiles — filled in by app.js. Weeks complete leads since
+           there's no single distance/pace metric across session types. -->
       <div class="stats-row">
         <div class="stat-tile">
-          <span id="statMiles" class="stat-value">0</span>
-          <span class="stat-label">miles logged</span>
+          <span id="statWeeksDone" class="stat-value">0 / 27</span>
+          <span class="stat-label">weeks complete</span>
         </div>
         <div class="stat-tile">
-          <span id="statWeeksDone" class="stat-value">0 / 24</span>
-          <span class="stat-label">weeks complete</span>
+          <span id="statSessions" class="stat-value">0 / 108</span>
+          <span class="stat-label">sessions done</span>
         </div>
         <div class="stat-tile">
           <span id="statStreak" class="stat-value">0</span>
