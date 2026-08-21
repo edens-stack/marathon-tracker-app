@@ -5,12 +5,12 @@
   TRAINING_PLAN (from plan.js), remembering which runs you've ticked off
   (in localStorage, so it survives closing the tab), and updating the
   progress bar / stat tiles / toasts / confetti whenever something changes.
-*/
 
-// Bumped to v2 because the plan structure changed (mile-based runs ->
-// time/speed-based sessions) — old v1 ticks wouldn't map onto the new
-// sessions correctly, so this intentionally starts everyone fresh.
-const STORAGE_KEY = 'marathonTracker.progress.v2';
+  The actual "which runs are done" storage (STORAGE_KEY, runKey,
+  loadProgress, saveProgress) lives in shared.js — the Plan page
+  (calendar.js) reads and writes that exact same data, so ticking a run
+  off here or on the calendar always shows up in both places.
+*/
 
 // { "1-0": true, "1-2": true, ... }  — keyed by "week-runIndex"
 let completed = loadProgress();
@@ -22,10 +22,6 @@ let toastTimer = null;
 // ---------------------------------------------------------------
 // Build the page
 // ---------------------------------------------------------------
-
-function runKey(week, runIndex) {
-  return `${week}-${runIndex}`;
-}
 
 function buildWeekCard(weekData) {
   const card = document.createElement('section');
@@ -93,7 +89,7 @@ function toggleRun(week, index) {
     completed[key] = true;
   }
 
-  saveProgress();
+  saveProgress(completed);
   refreshUI();
 
   const nowWeekComplete = isWeekComplete(week);
@@ -196,28 +192,6 @@ function refreshUI() {
 }
 
 // ---------------------------------------------------------------
-// Persistence
-// ---------------------------------------------------------------
-
-function loadProgress() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch (err) {
-    console.warn('Could not read saved progress, starting fresh.', err);
-    return {};
-  }
-}
-
-function saveProgress() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(completed));
-  } catch (err) {
-    console.warn('Could not save progress.', err);
-  }
-}
-
-// ---------------------------------------------------------------
 // Toasts + confetti (small delight touches)
 // ---------------------------------------------------------------
 
@@ -252,7 +226,7 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   const ok = confirm('Reset all progress? This clears every ticked run and cannot be undone.');
   if (!ok) return;
   completed = {};
-  saveProgress();
+  saveProgress(completed);
   refreshUI();
   showToast('Progress reset.');
 });

@@ -1,0 +1,68 @@
+<!--
+  plan.html
+  ---------
+  The SKELETON of the Plan page — a drag-and-drop weekly calendar for the
+  same 27-week schedule the Progress page (index.html) tracks. Ticking a
+  session complete here uses the exact same saved data as the Progress
+  page checklist (see shared.js), so both pages always agree.
+
+  calendar.js builds the actual week blocks / day cells / session cards
+  into #calendarContainer — this file just sets up the empty scaffolding
+  plus the libraries/scripts it needs.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marathon Tracker — Plan</title>
+
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="calendar.css" />
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏃</text></svg>" />
+</head>
+<body>
+
+  <div class="page">
+
+    <!-- ===== NAV ===== -->
+    <nav class="top-nav">
+      <a href="index.html" class="top-nav-link">Progress</a>
+      <a href="plan.html" class="top-nav-link is-current">Plan</a>
+    </nav>
+
+    <!-- ===== HEADER ===== -->
+    <header class="header calendar-header">
+      <div class="brand">
+        <span class="brand-icon">🗓️</span>
+        <div>
+          <h1 class="brand-name">Plan</h1>
+          <p class="brand-sub">Drag a session to reschedule it — tap the circle to mark it done.</p>
+        </div>
+      </div>
+
+      <!-- Badge colour legend, built by calendar.js from TYPE_META so it
+           never drifts out of sync with the actual badge colours. -->
+      <div id="calendarLegend" class="calendar-legend"></div>
+    </header>
+
+    <!-- ===== CALENDAR ===== -->
+    <!-- calendar.js fills this with one .week-block per week, each
+         holding 7 .day-cell columns (Monday → Sunday). -->
+    <main id="calendarContainer" class="calendar-container"></main>
+
+  </div>
+
+  <!-- Sticky shortcut back to today's date — calendar.js shows/positions it. -->
+  <button id="jumpTodayBtn" class="jump-today-btn" type="button">📍 Today</button>
+
+  <!-- plan.js (training data) + shared.js (storage helpers) load first;
+       Sortable (vendored, for touch-friendly drag-and-drop) before
+       calendar.js, which uses all three. -->
+  <script src="plan.js"></script>
+  <script src="shared.js"></script>
+  <script src="vendor/sortable.min.js"></script>
+  <script src="calendar.js"></script>
+</body>
+</html>

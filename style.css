@@ -55,6 +55,36 @@ body {
   padding: 24px 16px 64px;
 }
 
+/* ===================== NAV ===================== */
+
+.top-nav {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.top-nav-link {
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--text-secondary);
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.top-nav-link:hover {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.top-nav-link.is-current {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
 /* ===================== HEADER ===================== */
 
 .header {

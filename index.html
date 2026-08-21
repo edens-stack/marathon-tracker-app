@@ -21,6 +21,14 @@
 
   <div class="page">
 
+    <!-- ===== NAV ===== -->
+    <!-- Shared between index.html and plan.html — "current" marks
+         whichever page you're actually on. -->
+    <nav class="top-nav">
+      <a href="index.html" class="top-nav-link is-current">Progress</a>
+      <a href="plan.html" class="top-nav-link">Plan</a>
+    </nav>
+
     <!-- ===== HEADER ===== -->
     <header class="header">
       <div class="brand">
@@ -75,8 +83,10 @@
   <!-- A quiet toast that pops up on milestones ("Week 3 complete! 🎉"). -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- plan.js (the data) loads before app.js (the logic that uses it). -->
+  <!-- plan.js (the data) and shared.js (the storage helpers) load before
+       app.js (the logic that uses both). -->
   <script src="plan.js"></script>
+  <script src="shared.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
