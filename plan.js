@@ -16,13 +16,20 @@
               (this controls the colour of the little badge next to it)
 
   Want to edit your plan? Just change the labels below — the rest of the
-  app rebuilds itself automatically from this list.
+  app rebuilds itself automatically from this list. Editing labels here
+  never affects saved progress or calendar placements (see shared.js /
+  calendar.js) — those are keyed by week number + session type, not by
+  the label text, so re-wording a session is always safe.
 
   Notes from the plan this was built from:
     - Indoor easy run builds to 2h by week 11, then holds each speed for
       2 weeks before the next 0.2 km/h bump (open-ended after week 27).
-    - Indoor tempo run cycles 15/20-45 min in 5-min steps, resetting to
-      +1 km/h each time it hits 45 min (open-ended after week 27).
+    - Indoor tempo run cycles 15-30 min in 5-min steps (the very first
+      cycle starts at 20 min instead of 15), resetting to +0.5 km/h each
+      time it hits 30 min (open-ended after week 27). Capped at 30 min
+      instead of the original 45 min, with the smaller +0.5 km/h bump
+      (instead of +1 km/h) chosen so it still lands on the same 13.0 km/h
+      top speed by week 27, just via more frequent, smaller steps.
     - Outdoor run: +5 min/week to 1h30, then +10 min/week to 3h, then
       +30 min/week to 4h.
     - Leg strength: 1 session/week, day/placement flexible — separate
@@ -53,145 +60,145 @@ const TRAINING_PLAN = [
   { week: 4,  runs: [
     { label: '30 min', type: 'outdoor' },
     { label: '1h 25m @ 8.0 km/h', type: 'easy' },
-    { label: '35 min @ 10.0 km/h', type: 'tempo' },
+    { label: '15 min @ 10.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 5,  runs: [
     { label: '35 min', type: 'outdoor' },
     { label: '1h 30m @ 8.0 km/h', type: 'easy' },
-    { label: '40 min @ 10.0 km/h', type: 'tempo' },
+    { label: '20 min @ 10.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 6,  runs: [
     { label: '40 min', type: 'outdoor' },
     { label: '1h 35m @ 8.0 km/h', type: 'easy' },
-    { label: '45 min @ 10.0 km/h', type: 'tempo' },
+    { label: '25 min @ 10.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 7,  runs: [
     { label: '45 min', type: 'outdoor' },
     { label: '1h 40m @ 8.0 km/h', type: 'easy' },
-    { label: '15 min @ 11.0 km/h', type: 'tempo' },
+    { label: '30 min @ 10.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 8,  runs: [
     { label: '50 min', type: 'outdoor' },
     { label: '1h 45m @ 8.0 km/h', type: 'easy' },
-    { label: '20 min @ 11.0 km/h', type: 'tempo' },
+    { label: '15 min @ 11.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 9,  runs: [
     { label: '55 min', type: 'outdoor' },
     { label: '1h 50m @ 8.0 km/h', type: 'easy' },
-    { label: '25 min @ 11.0 km/h', type: 'tempo' },
+    { label: '20 min @ 11.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 10, runs: [
     { label: '1h', type: 'outdoor' },
     { label: '1h 55m @ 8.0 km/h', type: 'easy' },
-    { label: '30 min @ 11.0 km/h', type: 'tempo' },
+    { label: '25 min @ 11.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 11, runs: [
     { label: '1h 5m', type: 'outdoor' },
     { label: '2h @ 8.0 km/h', type: 'easy' },
-    { label: '35 min @ 11.0 km/h', type: 'tempo' },
+    { label: '30 min @ 11.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 12, runs: [
     { label: '1h 10m', type: 'outdoor' },
     { label: '2h @ 8.0 km/h', type: 'easy' },
-    { label: '40 min @ 11.0 km/h', type: 'tempo' },
+    { label: '15 min @ 11.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 13, runs: [
     { label: '1h 15m', type: 'outdoor' },
     { label: '2h @ 8.2 km/h', type: 'easy' },
-    { label: '45 min @ 11.0 km/h', type: 'tempo' },
+    { label: '20 min @ 11.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 14, runs: [
     { label: '1h 20m', type: 'outdoor' },
     { label: '2h @ 8.2 km/h', type: 'easy' },
-    { label: '15 min @ 12.0 km/h', type: 'tempo' },
+    { label: '25 min @ 11.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 15, runs: [
     { label: '1h 25m', type: 'outdoor' },
     { label: '2h @ 8.4 km/h', type: 'easy' },
-    { label: '20 min @ 12.0 km/h', type: 'tempo' },
+    { label: '30 min @ 11.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 16, runs: [
     { label: '1h 30m', type: 'outdoor' },
     { label: '2h @ 8.4 km/h', type: 'easy' },
-    { label: '25 min @ 12.0 km/h', type: 'tempo' },
+    { label: '15 min @ 12.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 17, runs: [
     { label: '1h 40m', type: 'outdoor' },
     { label: '2h @ 8.6 km/h', type: 'easy' },
-    { label: '30 min @ 12.0 km/h', type: 'tempo' },
+    { label: '20 min @ 12.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 18, runs: [
     { label: '1h 50m', type: 'outdoor' },
     { label: '2h @ 8.6 km/h', type: 'easy' },
-    { label: '35 min @ 12.0 km/h', type: 'tempo' },
+    { label: '25 min @ 12.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 19, runs: [
     { label: '2h', type: 'outdoor' },
     { label: '2h @ 8.8 km/h', type: 'easy' },
-    { label: '40 min @ 12.0 km/h', type: 'tempo' },
+    { label: '30 min @ 12.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 20, runs: [
     { label: '2h 10m', type: 'outdoor' },
     { label: '2h @ 8.8 km/h', type: 'easy' },
-    { label: '45 min @ 12.0 km/h', type: 'tempo' },
+    { label: '15 min @ 12.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 21, runs: [
     { label: '2h 20m', type: 'outdoor' },
     { label: '2h @ 9.0 km/h', type: 'easy' },
-    { label: '15 min @ 13.0 km/h', type: 'tempo' },
+    { label: '20 min @ 12.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 22, runs: [
     { label: '2h 30m', type: 'outdoor' },
     { label: '2h @ 9.0 km/h', type: 'easy' },
-    { label: '20 min @ 13.0 km/h', type: 'tempo' },
+    { label: '25 min @ 12.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 23, runs: [
     { label: '2h 40m', type: 'outdoor' },
     { label: '2h @ 9.2 km/h', type: 'easy' },
-    { label: '25 min @ 13.0 km/h', type: 'tempo' },
+    { label: '30 min @ 12.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 24, runs: [
     { label: '2h 50m', type: 'outdoor' },
     { label: '2h @ 9.2 km/h', type: 'easy' },
-    { label: '30 min @ 13.0 km/h', type: 'tempo' },
+    { label: '15 min @ 13.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 25, runs: [
     { label: '3h', type: 'outdoor' },
     { label: '2h @ 9.4 km/h', type: 'easy' },
-    { label: '35 min @ 13.0 km/h', type: 'tempo' },
+    { label: '20 min @ 13.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 26, runs: [
     { label: '3h 30m', type: 'outdoor' },
     { label: '2h @ 9.4 km/h', type: 'easy' },
-    { label: '40 min @ 13.0 km/h', type: 'tempo' },
+    { label: '25 min @ 13.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
   { week: 27, runs: [
     { label: '4h', type: 'outdoor' },
     { label: '2h @ 9.6 km/h', type: 'easy' },
-    { label: '45 min @ 13.0 km/h', type: 'tempo' },
+    { label: '30 min @ 13.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
   ]},
 ];
