@@ -52,11 +52,6 @@
   font-weight: 800;
 }
 
-.week-block-dates {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
 .week-block-count {
   font-size: 12px;
   color: var(--text-muted);

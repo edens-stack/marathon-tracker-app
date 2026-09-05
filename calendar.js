@@ -185,7 +185,7 @@ function buildSessionCard(session, progress) {
     setRunComplete(freshProgress, session.weekNumber, session.type, nowDone);
     saveProgress(freshProgress);
     card.classList.toggle('is-done', nowDone);
-    updateWeekBlockCount(session.weekNumber);
+    updateBlockCount(blockMondayFor(session.scheduledDate));
   });
 
   return card;
@@ -216,39 +216,54 @@ function buildDayCell(iso, dayIndex, progress) {
   return cell;
 }
 
-function weekCompletionCount(weekNumber, progress) {
-  return SESSION_TYPES.filter((type) => isRunComplete(progress, weekNumber, type)).length;
+// The Monday of the calendar block a given date falls in. Blocks are laid
+// out on a fixed 7-day grid anchored to WEEK1_MONDAY.
+function blockMondayFor(iso) {
+  return addDaysISO(WEEK1_MONDAY, Math.floor(daysBetweenISO(WEEK1_MONDAY, iso) / 7) * 7);
 }
 
-function updateWeekBlockCount(weekNumber) {
-  const block = container.querySelector(`.week-block[data-week-number="${weekNumber}"]`);
+// Counts are derived from the sessions actually sitting in this block's
+// seven days — NOT from the plan week they came from — so a dragged or
+// pushed-back session is counted where it now appears on the calendar.
+function blockCounts(monday, progress) {
+  const sunday = addDaysISO(monday, 6);
+  const inBlock = sessions.filter(
+    (s) => s.scheduledDate >= monday && s.scheduledDate <= sunday
+  );
+  const done = inBlock.filter((s) => isRunComplete(progress, s.weekNumber, s.type)).length;
+  return { done, total: inBlock.length };
+}
+
+function updateBlockCount(monday) {
+  const block = container.querySelector(`.week-block[data-monday="${monday}"]`);
   if (!block) return;
-  const progress = loadProgress();
-  const done = weekCompletionCount(weekNumber, progress);
-  block.querySelector('.week-block-count').textContent = `${done}/4`;
-  block.classList.toggle('is-complete', done === 4);
+  const { done, total } = blockCounts(monday, loadProgress());
+  block.querySelector('.week-block-count').textContent = `${done}/${total}`;
+  block.classList.toggle('is-complete', total > 0 && done === total);
 }
 
 function buildWeekBlock(weekNumber, progress) {
   const monday = addDaysISO(WEEK1_MONDAY, (weekNumber - 1) * 7);
   const sunday = addDaysISO(monday, 6);
-  const done = weekCompletionCount(weekNumber, progress);
+  const { done, total } = blockCounts(monday, progress);
 
   const block = document.createElement('section');
-  block.className = `week-block${done === 4 ? ' is-complete' : ''}`;
-  block.dataset.weekNumber = weekNumber;
+  block.className = `week-block${total > 0 && done === total ? ' is-complete' : ''}`;
+  block.dataset.monday = monday;
 
+  // Deliberately no "Week N" label here: the blocks are just calendar
+  // weeks. Once a week is skipped, plan week N no longer lines up with
+  // the Nth block, and a number here would contradict the sessions in it.
   const head = document.createElement('div');
   head.className = 'week-block-head';
   head.innerHTML = `
     <div class="week-block-title-group">
-      <span class="week-block-title">Week ${weekNumber}</span>
-      <span class="week-block-dates">${formatDateShort(monday)} – ${formatDateShort(sunday)}</span>
-      <span class="week-block-count">${done}/4</span>
+      <span class="week-block-title">${formatDateShort(monday)} – ${formatDateShort(sunday)}</span>
+      <span class="week-block-count">${done}/${total}</span>
     </div>
     <button type="button" class="skip-week-btn">Skip this week →</button>
   `;
-  head.querySelector('.skip-week-btn').addEventListener('click', () => skipWeek(weekNumber));
+  head.querySelector('.skip-week-btn').addEventListener('click', () => skipWeek(monday));
   block.appendChild(head);
 
   const days = document.createElement('div');
@@ -296,6 +311,7 @@ function initSortable() {
         const newDate = evt.to.dataset.date;
         const session = sessions.find((s) => s.id === sessionId);
         if (!session || session.scheduledDate === newDate) return;
+        const oldDate = session.scheduledDate;
         session.scheduledDate = newDate;
         saveCalendarSessions(sessions);
         // A drop can move a card into what used to be an empty trailing
@@ -303,6 +319,10 @@ function initSortable() {
         // block list (and its date-range headers) always covers it.
         if (blockCountNeeded() !== container.querySelectorAll('.week-block').length) {
           renderCalendar();
+        } else {
+          // Counts are per calendar block, so both ends of the move change.
+          updateBlockCount(blockMondayFor(oldDate));
+          updateBlockCount(blockMondayFor(newDate));
         }
       },
     });
@@ -313,16 +333,18 @@ function initSortable() {
 // Skip week
 // ---------------------------------------------------------------
 
-function skipWeek(weekNumber) {
+function skipWeek(monday) {
+  const sunday = addDaysISO(monday, 6);
   const ok = confirm(
-    `Push every remaining session in Week ${weekNumber} and every week after it forward by 7 days?\n\n` +
+    `Push every remaining session from ${formatDateShort(monday)} – ${formatDateShort(sunday)} ` +
+    `onwards forward by 7 days?\n\n` +
     `Sessions you've already ticked off are left exactly where they are.`
   );
   if (!ok) return;
 
   const progress = loadProgress();
   sessions.forEach((session) => {
-    if (session.weekNumber < weekNumber) return;
+    if (session.scheduledDate < monday) return;
     if (isRunComplete(progress, session.weekNumber, session.type)) return;
     session.scheduledDate = addDaysISO(session.scheduledDate, 7);
   });
