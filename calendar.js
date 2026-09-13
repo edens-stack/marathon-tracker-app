@@ -162,9 +162,14 @@ function mondayForWeek(weekNumber) {
 //
 // Taken as the most common value rather than an average, so individual
 // cards you've dragged off on their own don't drag the answer with them.
-function weekShiftDays(list, weekNumber) {
+//
+// Completed sessions are left out of the tally entirely: skipWeek
+// deliberately doesn't move those, so a ticked-off session sitting at
+// its original date is evidence that you'd already done it, not evidence
+// about where its week now sits.
+function weekShiftDays(list, weekNumber, progress) {
   const shifts = list
-    .filter((s) => s.weekNumber === weekNumber && s.originalDate)
+    .filter((s) => s.weekNumber === weekNumber && s.originalDate && !isSessionDone(progress, s))
     .map((s) => daysBetweenISO(s.originalDate, s.scheduledDate));
   if (!shifts.length) return 0;
 
@@ -196,6 +201,7 @@ function weekShiftDays(list, weekNumber) {
 function syncCalendarSessions(saved) {
   const expected = expectedSessions();
   const savedById = new Map(saved.map((s) => [s.id, s]));
+  const progress = loadProgress();
 
   let changed = saved.length !== expected.length;
   const merged = expected.map((want) => {
@@ -205,7 +211,7 @@ function syncCalendarSessions(saved) {
       // A session appearing for the first time in a week that's already
       // been pushed back has to be pushed back with it — otherwise it
       // lands a week clear of the sessions it belongs with.
-      const shift = weekShiftDays(saved, want.weekNumber);
+      const shift = weekShiftDays(saved, want.weekNumber, progress);
       return shift
         ? { ...want, scheduledDate: addDaysISO(want.scheduledDate, shift) }
         : want;
@@ -231,15 +237,21 @@ function syncCalendarSessions(saved) {
 // — so nothing you've deliberately placed is touched. It runs once and
 // then records that it has: as a standing rule it would keep yanking
 // back any session you'd chosen to leave on its default day.
+//
+// Completed sessions are never moved. skipWeek leaves those in place on
+// purpose, so one sitting at its original date is a record of the day
+// you actually did it — not a session that's been left behind.
 function realignSkippedWeeks(list) {
   if (localStorage.getItem(REALIGN_KEY)) return null;
 
+  const progress = loadProgress();
   let changed = false;
   const realigned = list.map((session) => {
     if (!session.originalDate || session.scheduledDate !== session.originalDate) return session;
+    if (isSessionDone(progress, session)) return session;
     // The session's own 0 is in this tally, which is what we want: it
     // only loses to a shift the REST of the week agrees on.
-    const shift = weekShiftDays(list, session.weekNumber);
+    const shift = weekShiftDays(list, session.weekNumber, progress);
     if (!shift) return session;
     changed = true;
     return { ...session, scheduledDate: addDaysISO(session.scheduledDate, shift) };
