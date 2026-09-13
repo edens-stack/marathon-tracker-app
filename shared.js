@@ -66,3 +66,101 @@ function saveProgress(progress) {
     console.warn('Could not save progress.', err);
   }
 }
+
+/* ===============================================================
+   EXTRA SESSIONS
+   ---------------------------------------------------------------
+   Everything above deals with the fixed plan in plan.js. This part
+   deals with the sessions YOU add on top of it — currently just extra
+   upper body strength sessions, added with the "+ Upper body session"
+   button on either page.
+
+   Why these can't just be pushed into TRAINING_PLAN: plan.js is static
+   data shared by every copy of the app, while these are personal and
+   open-ended (add a third upper body session to week 9 if you've got
+   the time, don't if you haven't). So they live in their own
+   localStorage list, and both pages render them right alongside the
+   baseline sessions.
+
+   Each extra is { id, week, type }. Unlike baseline sessions — which
+   are identified by (week, type), since the plan has exactly one of
+   each per week — extras need their own id, because the whole point is
+   that a week can hold several of the same type.
+   =============================================================== */
+
+const EXTRAS_KEY = 'marathonTracker.extraSessions.v1';
+
+function loadExtras() {
+  try {
+    const raw = localStorage.getItem(EXTRAS_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list : [];
+  } catch (err) {
+    console.warn('Could not read saved extra sessions, starting fresh.', err);
+    return [];
+  }
+}
+
+function saveExtras(list) {
+  try {
+    localStorage.setItem(EXTRAS_KEY, JSON.stringify(list));
+  } catch (err) {
+    console.warn('Could not save extra sessions.', err);
+  }
+}
+
+function extrasForWeek(list, week) {
+  return list.filter((e) => e.week === week);
+}
+
+// Extras share the SAME progress object as baseline sessions (one
+// localStorage entry, one answer to "did I do this"), just under an
+// "extra-" prefixed key so the two schemes can't collide.
+function extraKey(id) {
+  return `extra-${id}`;
+}
+
+function isExtraComplete(progress, id) {
+  return !!progress[extraKey(id)];
+}
+
+function setExtraComplete(progress, id, done) {
+  if (done) {
+    progress[extraKey(id)] = true;
+  } else {
+    delete progress[extraKey(id)];
+  }
+}
+
+// Reads, appends and saves in one go, returning the new extra so the
+// caller can immediately render/schedule it.
+function addExtraSession(week, type) {
+  const list = loadExtras();
+  const extra = {
+    // Date + random suffix: unique across sessions and across tabs,
+    // without needing a counter that could drift after a removal.
+    id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`,
+    week,
+    type,
+  };
+  list.push(extra);
+  saveExtras(list);
+  return extra;
+}
+
+// Removing an extra also drops its tick, so a later extra can never
+// inherit a stale "done" from one you deleted.
+function removeExtraSession(id) {
+  saveExtras(loadExtras().filter((e) => e.id !== id));
+  const progress = loadProgress();
+  if (progress[extraKey(id)]) {
+    delete progress[extraKey(id)];
+    saveProgress(progress);
+  }
+}
+
+// How many upper body sessions week N holds in total (baseline + extras)
+// — used for the "Upper body #2" style numbering on the cards.
+function extraOrdinal(list, extra) {
+  return extrasForWeek(list, extra.week).findIndex((e) => e.id === extra.id) + 2;
+}

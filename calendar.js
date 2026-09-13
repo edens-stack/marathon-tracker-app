@@ -7,7 +7,7 @@
   session to a different day (via the vendored SortableJS), and the
   "skip this week" bulk-reschedule button.
 
-  Two separate pieces of saved state, both in localStorage:
+  Three separate pieces of saved state, all in localStorage:
     - CALENDAR_KEY  (this file)  — WHERE each session currently sits
                                     (its scheduledDate), and where it
                                     was originally auto-placed.
@@ -15,6 +15,15 @@
                                     the exact same "done" data the
                                     Progress page uses, so ticking a
                                     session here or there always agrees.
+    - EXTRAS_KEY    (shared.js)  — the extra upper body sessions you've
+                                    added on top of the plan, also shared
+                                    with the Progress page.
+
+  CALENDAR_KEY is a cache of placements, not a source of truth about
+  which sessions exist: syncCalendarSessions() reconciles it against
+  TRAINING_PLAN + the extras list on every load. That's what makes an
+  extra added on the Progress page show up here, and what quietly
+  back-fills sessions for anyone whose saved calendar predates them.
 */
 
 const CALENDAR_KEY = 'marathonTracker.calendarSessions.v1';
@@ -28,15 +37,26 @@ const WEEK1_MONDAY = '2026-08-17';
 // by default, but still a valid place to drag a session to.
 const AUTO_PLACEMENT = {
   easy: 0,      // Monday
+  upper: 1,     // Tuesday
   strength: 2,  // Wednesday
   tempo: 4,     // Friday
   outdoor: 5,   // Saturday
 };
 
-const SESSION_TYPES = ['outdoor', 'easy', 'tempo', 'strength'];
+// Where an EXTRA session lands when you add one: Thursday, the only day
+// the baseline plan leaves empty. They stack up there if you add several
+// — drag them wherever they actually fit.
+const EXTRA_PLACEMENT = 3;
+
+const SESSION_TYPES = ['outdoor', 'easy', 'tempo', 'strength', 'upper'];
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 let sessions = loadCalendarSessions();
+
+// The extras list, kept alongside `sessions` so a card can look up its
+// own "#2 / #3" ordinal without re-reading localStorage per render.
+// Re-read after every add/remove.
+let extras = loadExtras();
 
 const container = document.getElementById('calendarContainer');
 const legendEl = document.getElementById('calendarLegend');
@@ -83,10 +103,15 @@ function todayISO() {
 // Building / loading the session list
 // ---------------------------------------------------------------
 
-function generateDefaultSessions() {
+// Every session that SHOULD exist right now — the plan's baseline plus
+// your extras — each with the date it would get if it were brand new.
+// Nothing here looks at what's already saved; syncCalendarSessions()
+// does the merging.
+function expectedSessions() {
   const list = [];
+
   TRAINING_PLAN.forEach((weekData) => {
-    const weekMonday = addDaysISO(WEEK1_MONDAY, (weekData.week - 1) * 7);
+    const weekMonday = mondayForWeek(weekData.week);
     weekData.runs.forEach((run) => {
       const dayOffset = AUTO_PLACEMENT[run.type];
       if (dayOffset === undefined) return; // no auto slot for this type
@@ -100,19 +125,72 @@ function generateDefaultSessions() {
       });
     });
   });
+
+  loadExtras().forEach((extra) => {
+    const date = addDaysISO(mondayForWeek(extra.week), EXTRA_PLACEMENT);
+    list.push({
+      id: `x-${extra.id}`,
+      type: extra.type,
+      weekNumber: extra.week,
+      extraId: extra.id,
+      scheduledDate: date,
+      originalDate: date,
+    });
+  });
+
   return list;
 }
 
+function mondayForWeek(weekNumber) {
+  return addDaysISO(WEEK1_MONDAY, (weekNumber - 1) * 7);
+}
+
+// Merge what's saved with what should exist:
+//   - a session that's saved AND expected keeps the date you dragged it to
+//   - a session that's expected but not saved is added at its default slot
+//     (a newly added extra, or an upper body session on a calendar saved
+//      before the plan had one)
+//   - a session that's saved but no longer expected is dropped
+//     (an extra you removed on either page)
+// Returns null when nothing changed, so a normal load doesn't rewrite
+// localStorage for no reason.
+function syncCalendarSessions(saved) {
+  const expected = expectedSessions();
+  const savedById = new Map(saved.map((s) => [s.id, s]));
+
+  let changed = saved.length !== expected.length;
+  const merged = expected.map((want) => {
+    const have = savedById.get(want.id);
+    if (!have) {
+      changed = true;
+      return want;
+    }
+    // Keep the saved placement, but take everything else from `want` so
+    // fields added in later versions (extraId) get filled in.
+    return { ...want, scheduledDate: have.scheduledDate, originalDate: have.originalDate || want.originalDate };
+  });
+
+  return changed ? merged : null;
+}
+
 function loadCalendarSessions() {
+  let saved = null;
   try {
     const raw = localStorage.getItem(CALENDAR_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) saved = JSON.parse(raw);
   } catch (err) {
     console.warn('Could not read saved calendar, regenerating.', err);
   }
-  const generated = generateDefaultSessions();
-  saveCalendarSessions(generated);
-  return generated;
+
+  if (!Array.isArray(saved)) {
+    const generated = expectedSessions();
+    saveCalendarSessions(generated);
+    return generated;
+  }
+
+  const synced = syncCalendarSessions(saved);
+  if (synced) saveCalendarSessions(synced);
+  return synced || saved;
 }
 
 function saveCalendarSessions(list) {
@@ -162,18 +240,40 @@ function sessionsOnDate(iso) {
     .sort((a, b) => SESSION_TYPES.indexOf(a.type) - SESSION_TYPES.indexOf(b.type));
 }
 
+// Baseline sessions are identified by (week, type); extras carry their
+// own id. One helper so nothing has to remember which is which.
+function isSessionDone(progress, session) {
+  return session.extraId
+    ? isExtraComplete(progress, session.extraId)
+    : isRunComplete(progress, session.weekNumber, session.type);
+}
+
+function setSessionDone(progress, session, done) {
+  if (session.extraId) {
+    setExtraComplete(progress, session.extraId, done);
+  } else {
+    setRunComplete(progress, session.weekNumber, session.type, done);
+  }
+}
+
 function buildSessionCard(session, progress) {
   const meta = TYPE_META[session.type];
-  const done = isRunComplete(progress, session.weekNumber, session.type);
+  const done = isSessionDone(progress, session);
 
   const card = document.createElement('div');
-  card.className = `session-card slot-${meta.slot}${done ? ' is-done' : ''}`;
+  card.className = `session-card slot-${meta.slot}${done ? ' is-done' : ''}${session.extraId ? ' is-extra' : ''}`;
   card.dataset.sessionId = session.id;
+
+  // "#2", "#3"… on extras only — the baseline session of each type is
+  // implicitly #1 and doesn't need labelling.
+  const extra = session.extraId && extras.find((e) => e.id === session.extraId);
+  const ordinal = extra ? ` #${extraOrdinal(extras, extra)}` : '';
+
   card.innerHTML = `
     <span class="drag-handle" aria-hidden="true">⠿</span>
     <button type="button" class="session-check" aria-label="Mark session complete">✓</button>
     <span class="session-body">
-      <span class="run-badge slot-${meta.slot}">${meta.badge}</span>
+      <span class="run-badge slot-${meta.slot}">${meta.badge}${ordinal}</span>
       <div class="session-detail">${labelFor(session.weekNumber, session.type)}</div>
       <div class="session-week">Week ${session.weekNumber}</div>
     </span>
@@ -181,12 +281,23 @@ function buildSessionCard(session, progress) {
 
   card.querySelector('.session-check').addEventListener('click', () => {
     const freshProgress = loadProgress();
-    const nowDone = !isRunComplete(freshProgress, session.weekNumber, session.type);
-    setRunComplete(freshProgress, session.weekNumber, session.type, nowDone);
+    const nowDone = !isSessionDone(freshProgress, session);
+    setSessionDone(freshProgress, session, nowDone);
     saveProgress(freshProgress);
     card.classList.toggle('is-done', nowDone);
     updateBlockCount(blockMondayFor(session.scheduledDate));
   });
+
+  if (session.extraId) {
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'session-remove';
+    remove.textContent = '✕';
+    remove.title = 'Remove this extra session';
+    remove.setAttribute('aria-label', `Remove extra ${meta.badge} session from week ${session.weekNumber}`);
+    remove.addEventListener('click', () => removeExtraFromCalendar(session.extraId));
+    card.appendChild(remove);
+  }
 
   return card;
 }
@@ -230,7 +341,7 @@ function blockCounts(monday, progress) {
   const inBlock = sessions.filter(
     (s) => s.scheduledDate >= monday && s.scheduledDate <= sunday
   );
-  const done = inBlock.filter((s) => isRunComplete(progress, s.weekNumber, s.type)).length;
+  const done = inBlock.filter((s) => isSessionDone(progress, s)).length;
   return { done, total: inBlock.length };
 }
 
@@ -261,9 +372,13 @@ function buildWeekBlock(weekNumber, progress) {
       <span class="week-block-title">${formatDateShort(monday)} – ${formatDateShort(sunday)}</span>
       <span class="week-block-count">${done}/${total}</span>
     </div>
-    <button type="button" class="skip-week-btn">Skip this week →</button>
+    <div class="week-block-actions">
+      <button type="button" class="add-session-btn">+ Upper body</button>
+      <button type="button" class="skip-week-btn">Skip this week →</button>
+    </div>
   `;
   head.querySelector('.skip-week-btn').addEventListener('click', () => skipWeek(monday));
+  head.querySelector('.add-session-btn').addEventListener('click', () => addExtraToBlock(monday, 'upper'));
   block.appendChild(head);
 
   const days = document.createElement('div');
@@ -285,6 +400,57 @@ function renderCalendar() {
     container.appendChild(buildWeekBlock(b + 1, progress));
   }
   initSortable();
+}
+
+// ---------------------------------------------------------------
+// Adding / removing extra sessions
+// ---------------------------------------------------------------
+// These write to the same extras list the Progress page uses, so a
+// session added here shows up on that page's week card too.
+
+// Which plan week a calendar block belongs to. Normally that's just its
+// position (block 3 = week 3), but once a week has been skipped the two
+// drift apart — so prefer the earliest plan week actually sitting in the
+// block, and only fall back to the position when the block is empty.
+function planWeekForBlock(monday) {
+  const sunday = addDaysISO(monday, 6);
+  const inBlock = sessions.filter((s) => s.scheduledDate >= monday && s.scheduledDate <= sunday);
+  if (inBlock.length) {
+    return Math.min(...inBlock.map((s) => s.weekNumber));
+  }
+  const index = Math.floor(daysBetweenISO(WEEK1_MONDAY, monday) / 7) + 1;
+  // Blocks past the end of the plan (reachable by dragging/skipping)
+  // still have to hang their extras off a real plan week.
+  return Math.min(Math.max(index, 1), TRAINING_PLAN.length);
+}
+
+function addExtraToBlock(monday, type) {
+  const week = planWeekForBlock(monday);
+  const extra = addExtraSession(week, type);
+  extras = loadExtras();
+
+  // Place it in the block you clicked rather than at the plan week's
+  // default Thursday — after a skip those can be different weeks, and
+  // "add" should put the card where you're looking.
+  const date = addDaysISO(monday, EXTRA_PLACEMENT);
+  sessions.push({
+    id: `x-${extra.id}`,
+    type: extra.type,
+    weekNumber: extra.week,
+    extraId: extra.id,
+    scheduledDate: date,
+    originalDate: date,
+  });
+  saveCalendarSessions(sessions);
+  renderCalendar();
+}
+
+function removeExtraFromCalendar(extraId) {
+  removeExtraSession(extraId);
+  extras = loadExtras();
+  sessions = sessions.filter((s) => s.extraId !== extraId);
+  saveCalendarSessions(sessions);
+  renderCalendar();
 }
 
 // ---------------------------------------------------------------
@@ -345,7 +511,7 @@ function skipWeek(monday) {
   const progress = loadProgress();
   sessions.forEach((session) => {
     if (session.scheduledDate < monday) return;
-    if (isRunComplete(progress, session.weekNumber, session.type)) return;
+    if (isSessionDone(progress, session)) return;
     session.scheduledDate = addDaysISO(session.scheduledDate, 7);
   });
   saveCalendarSessions(sessions);

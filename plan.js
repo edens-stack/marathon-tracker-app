@@ -5,15 +5,20 @@
   JavaScript array. Nothing in this file "does" anything by itself; app.js
   reads this array to build the page and track your progress.
 
-  Each week has 4 sessions: one outdoor run (time only, no fixed pace),
-  one indoor easy treadmill run, one indoor tempo run, and one leg strength
-  session. (Dates are left out on purpose — the plan is tracked purely by
-  week number.)
+  Each week has 5 sessions: one outdoor run (time only, no fixed pace),
+  one indoor easy treadmill run, one indoor tempo run, one leg strength
+  session, and one upper body strength session. (Dates are left out on
+  purpose — the plan is tracked purely by week number.)
 
   Each session has:
     - label : what's shown on the page (e.g. "1h 10m @ 8.0 km/h")
-    - type  : one of 'outdoor' | 'easy' | 'tempo' | 'strength'
+    - type  : one of 'outdoor' | 'easy' | 'tempo' | 'strength' | 'upper'
               (this controls the colour of the little badge next to it)
+
+  This array is the BASELINE only. Extra upper body sessions added with
+  the "+ Upper body session" button aren't written here — they're saved
+  per-user in localStorage (see EXTRAS_KEY in shared.js), so editing this
+  file never disturbs them, and they never disturb this file.
 
   Want to edit your plan? Just change the labels below — the rest of the
   app rebuilds itself automatically from this list. Editing labels here
@@ -32,8 +37,12 @@
       top speed by week 27, just via more frequent, smaller steps.
     - Outdoor run: +5 min/week to 1h30, then +10 min/week to 3h, then
       +30 min/week to 4h.
-    - Leg strength: 1 session/week, day/placement flexible — separate
-      from the existing 2x/week upper body work (not tracked here).
+    - Leg strength: 1 session/week, day/placement flexible.
+    - Upper body strength: 1 session/week as the baseline. The original
+      plan called for 2x/week, but the second (and any further) session
+      is deliberately left to the "+ Upper body session" button rather
+      than being hard-coded here — how many you actually fit in depends
+      on the week, and everything above is the part that shouldn't slip.
     - Cross-training (e.g. cycling) is optional and not tracked here —
       use it on an easy/rest day rather than adding volume.
 */
@@ -44,162 +53,189 @@ const TRAINING_PLAN = [
     { label: '1h 10m @ 8.0 km/h', type: 'easy' },
     { label: '20 min @ 10.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 2,  runs: [
     { label: '20 min', type: 'outdoor' },
     { label: '1h 15m @ 8.0 km/h', type: 'easy' },
     { label: '25 min @ 10.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 3,  runs: [
     { label: '25 min', type: 'outdoor' },
     { label: '1h 20m @ 8.0 km/h', type: 'easy' },
     { label: '30 min @ 10.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 4,  runs: [
     { label: '30 min', type: 'outdoor' },
     { label: '1h 25m @ 8.0 km/h', type: 'easy' },
     { label: '15 min @ 10.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 5,  runs: [
     { label: '35 min', type: 'outdoor' },
     { label: '1h 30m @ 8.0 km/h', type: 'easy' },
     { label: '20 min @ 10.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 6,  runs: [
     { label: '40 min', type: 'outdoor' },
     { label: '1h 35m @ 8.0 km/h', type: 'easy' },
     { label: '25 min @ 10.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 7,  runs: [
     { label: '45 min', type: 'outdoor' },
     { label: '1h 40m @ 8.0 km/h', type: 'easy' },
     { label: '30 min @ 10.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 8,  runs: [
     { label: '50 min', type: 'outdoor' },
     { label: '1h 45m @ 8.0 km/h', type: 'easy' },
     { label: '15 min @ 11.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 9,  runs: [
     { label: '55 min', type: 'outdoor' },
     { label: '1h 50m @ 8.0 km/h', type: 'easy' },
     { label: '20 min @ 11.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 10, runs: [
     { label: '1h', type: 'outdoor' },
     { label: '1h 55m @ 8.0 km/h', type: 'easy' },
     { label: '25 min @ 11.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 11, runs: [
     { label: '1h 5m', type: 'outdoor' },
     { label: '2h @ 8.0 km/h', type: 'easy' },
     { label: '30 min @ 11.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 12, runs: [
     { label: '1h 10m', type: 'outdoor' },
     { label: '2h @ 8.0 km/h', type: 'easy' },
     { label: '15 min @ 11.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 13, runs: [
     { label: '1h 15m', type: 'outdoor' },
     { label: '2h @ 8.2 km/h', type: 'easy' },
     { label: '20 min @ 11.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 14, runs: [
     { label: '1h 20m', type: 'outdoor' },
     { label: '2h @ 8.2 km/h', type: 'easy' },
     { label: '25 min @ 11.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 15, runs: [
     { label: '1h 25m', type: 'outdoor' },
     { label: '2h @ 8.4 km/h', type: 'easy' },
     { label: '30 min @ 11.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 16, runs: [
     { label: '1h 30m', type: 'outdoor' },
     { label: '2h @ 8.4 km/h', type: 'easy' },
     { label: '15 min @ 12.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 17, runs: [
     { label: '1h 40m', type: 'outdoor' },
     { label: '2h @ 8.6 km/h', type: 'easy' },
     { label: '20 min @ 12.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 18, runs: [
     { label: '1h 50m', type: 'outdoor' },
     { label: '2h @ 8.6 km/h', type: 'easy' },
     { label: '25 min @ 12.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 19, runs: [
     { label: '2h', type: 'outdoor' },
     { label: '2h @ 8.8 km/h', type: 'easy' },
     { label: '30 min @ 12.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 20, runs: [
     { label: '2h 10m', type: 'outdoor' },
     { label: '2h @ 8.8 km/h', type: 'easy' },
     { label: '15 min @ 12.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 21, runs: [
     { label: '2h 20m', type: 'outdoor' },
     { label: '2h @ 9.0 km/h', type: 'easy' },
     { label: '20 min @ 12.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 22, runs: [
     { label: '2h 30m', type: 'outdoor' },
     { label: '2h @ 9.0 km/h', type: 'easy' },
     { label: '25 min @ 12.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 23, runs: [
     { label: '2h 40m', type: 'outdoor' },
     { label: '2h @ 9.2 km/h', type: 'easy' },
     { label: '30 min @ 12.5 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 24, runs: [
     { label: '2h 50m', type: 'outdoor' },
     { label: '2h @ 9.2 km/h', type: 'easy' },
     { label: '15 min @ 13.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 25, runs: [
     { label: '3h', type: 'outdoor' },
     { label: '2h @ 9.4 km/h', type: 'easy' },
     { label: '20 min @ 13.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 26, runs: [
     { label: '3h 30m', type: 'outdoor' },
     { label: '2h @ 9.4 km/h', type: 'easy' },
     { label: '25 min @ 13.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
   { week: 27, runs: [
     { label: '4h', type: 'outdoor' },
     { label: '2h @ 9.6 km/h', type: 'easy' },
     { label: '30 min @ 13.0 km/h', type: 'tempo' },
     { label: 'Leg strength session', type: 'strength' },
+    { label: 'Upper body strength session', type: 'upper' },
   ]},
 ];
 
@@ -210,4 +246,5 @@ const TYPE_META = {
   easy:     { badge: 'Indoor Easy',   slot: 'aqua'   },
   tempo:    { badge: 'Indoor Tempo',  slot: 'yellow' },
   strength: { badge: 'Leg Strength',  slot: 'violet' },
+  upper:    { badge: 'Upper Body',    slot: 'orange' },
 };

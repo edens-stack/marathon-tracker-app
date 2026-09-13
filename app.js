@@ -10,10 +10,22 @@
   loadProgress, saveProgress) lives in shared.js — the Plan page
   (calendar.js) reads and writes that exact same data, so ticking a run
   off here or on the calendar always shows up in both places.
+
+  Two kinds of session end up on a week card:
+    - BASELINE sessions, straight out of TRAINING_PLAN, identified by
+      (week, index) — these are the same for everyone.
+    - EXTRA sessions you've added yourself with the "+ Upper body
+      session" button, identified by their own id (see shared.js).
+  They tick, count and complete a week identically; the only difference
+  is that an extra also gets a ✕ to remove it again.
 */
 
-// { "1-0": true, "1-2": true, ... }  — keyed by "week-runIndex"
+// { "1-0": true, "extra-m8x2k9q": true, ... } — baseline sessions keyed
+// by "week-runIndex", extras by "extra-<id>". One object, both pages.
 let completed = loadProgress();
+
+// [{ id, week, type }, ...] — the sessions added on top of the plan.
+let extras = loadExtras();
 
 const weeksContainer = document.getElementById('weeksContainer');
 const toastEl = document.getElementById('toast');
@@ -37,34 +49,104 @@ function buildWeekCard(weekData) {
   card.appendChild(head);
 
   weekData.runs.forEach((run, index) => {
-    const row = document.createElement('div');
-    row.className = 'run-row';
-    row.dataset.week = weekData.week;
-    row.dataset.index = index;
-    row.setAttribute('role', 'checkbox');
-    row.setAttribute('tabindex', '0');
-
-    const meta = TYPE_META[run.type];
-    row.innerHTML = `
-      <span class="run-checkbox">✓</span>
-      <span class="run-body">
-        <div class="run-label">${run.label}</div>
-        <span class="run-badge slot-${meta.slot}">${meta.badge}</span>
-      </span>
-    `;
-
-    row.addEventListener('click', () => toggleRun(weekData.week, index));
-    row.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        toggleRun(weekData.week, index);
-      }
-    });
-
-    card.appendChild(row);
+    card.appendChild(buildBaseRow(weekData.week, run, index));
   });
 
+  extrasForWeek(extras, weekData.week).forEach((extra) => {
+    card.appendChild(buildExtraRow(extra));
+  });
+
+  card.appendChild(buildAddButton(weekData.week));
+
   return card;
+}
+
+// A row is a checkbox + label + badge, and behaves as a checkbox for
+// keyboard users. Baseline and extra rows share this shell so they look
+// and feel identical — only what they toggle differs.
+function buildRowShell(label, type, onToggle) {
+  const meta = TYPE_META[type];
+
+  const row = document.createElement('div');
+  row.className = 'run-row';
+  row.setAttribute('role', 'checkbox');
+  row.setAttribute('tabindex', '0');
+  row.innerHTML = `
+    <span class="run-checkbox">✓</span>
+    <span class="run-body">
+      <div class="run-label">${label}</div>
+      <span class="run-badge slot-${meta.slot}">${meta.badge}</span>
+    </span>
+  `;
+
+  row.addEventListener('click', onToggle);
+  row.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onToggle();
+    }
+  });
+
+  return row;
+}
+
+function buildBaseRow(week, run, index) {
+  const row = buildRowShell(run.label, run.type, () => toggleRun(week, index));
+  row.dataset.week = week;
+  row.dataset.index = index;
+  return row;
+}
+
+function buildExtraRow(extra) {
+  const label = labelForType(extra.week, extra.type);
+  const row = buildRowShell(label, extra.type, () => toggleExtra(extra.id));
+  row.dataset.week = extra.week;
+  row.dataset.extraId = extra.id;
+  row.classList.add('is-extra');
+
+  // "#2", "#3"… so several upper body sessions in one week are tellable
+  // apart at a glance (and match how they're labelled on the calendar).
+  const ordinal = document.createElement('span');
+  ordinal.className = 'run-ordinal';
+  ordinal.textContent = `#${extraOrdinal(extras, extra)}`;
+  row.querySelector('.run-body').appendChild(ordinal);
+
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'row-remove';
+  remove.textContent = '✕';
+  remove.title = 'Remove this extra session';
+  remove.setAttribute('aria-label', `Remove extra ${TYPE_META[extra.type].badge} session from week ${extra.week}`);
+  // The row itself toggles on click, so the ✕ has to stop the event
+  // before it bubbles — otherwise removing would also tick.
+  remove.addEventListener('click', (e) => {
+    e.stopPropagation();
+    removeExtra(extra.id, extra.week);
+  });
+  // Sits on the badge line rather than at the end of the row: there's
+  // empty space next to the badge, whereas squeezing it in beside the
+  // label would wrap text that fits fine on a baseline row.
+  row.querySelector('.run-body').appendChild(remove);
+
+  return row;
+}
+
+function buildAddButton(week) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'add-extra-btn';
+  btn.textContent = '+ Upper body session';
+  btn.setAttribute('aria-label', `Add another upper body session to week ${week}`);
+  btn.addEventListener('click', () => addExtra(week, 'upper'));
+  return btn;
+}
+
+// Extras carry no label of their own — they reuse the plan's wording for
+// that type, so re-wording a session in plan.js updates every copy.
+function labelForType(week, type) {
+  const weekData = TRAINING_PLAN.find((w) => w.week === week);
+  const run = weekData && weekData.runs.find((r) => r.type === type);
+  return run ? run.label : TYPE_META[type].badge;
 }
 
 function renderAll() {
@@ -80,7 +162,18 @@ function renderAll() {
 // ---------------------------------------------------------------
 
 function toggleRun(week, index) {
-  const key = runKey(week, index);
+  toggleKey(runKey(week, index), week);
+}
+
+function toggleExtra(id) {
+  const extra = extras.find((e) => e.id === id);
+  if (!extra) return;
+  toggleKey(extraKey(id), extra.week);
+}
+
+// Ticking anything is the same three steps — flip the key, save, then
+// see whether that just finished the week or the whole plan.
+function toggleKey(key, week) {
   const wasWeekComplete = isWeekComplete(week);
 
   if (completed[key]) {
@@ -92,8 +185,7 @@ function toggleRun(week, index) {
   saveProgress(completed);
   refreshUI();
 
-  const nowWeekComplete = isWeekComplete(week);
-  if (!wasWeekComplete && nowWeekComplete) {
+  if (!wasWeekComplete && isWeekComplete(week)) {
     showToast(`Week ${week} complete! 🎉`);
   }
 
@@ -104,9 +196,55 @@ function toggleRun(week, index) {
   }
 }
 
-function isWeekComplete(week) {
+// ---------------------------------------------------------------
+// Adding / removing extra sessions
+// ---------------------------------------------------------------
+// The Plan page picks these up on its next load: it reconciles its
+// calendar against the plan + this extras list, so a session added here
+// turns up on the calendar (and one removed here disappears from it)
+// without either page needing to know about the other.
+
+function addExtra(week, type) {
+  addExtraSession(week, type);
+  extras = loadExtras();
+  rerenderWeek(week);
+  refreshUI();
+  showToast(`Extra ${TYPE_META[type].badge.toLowerCase()} session added to week ${week}. 💪`);
+}
+
+function removeExtra(id, week) {
+  removeExtraSession(id);
+  extras = loadExtras();
+  completed = loadProgress(); // removeExtraSession may have dropped a tick
+  rerenderWeek(week);
+  refreshUI();
+}
+
+// Swap one card in place rather than re-rendering all 27 — the page
+// doesn't jump under you when you add a session halfway down.
+function rerenderWeek(week) {
+  const oldCard = weeksContainer.querySelector(`.week-card[data-week="${week}"]`);
+  if (!oldCard) return;
   const weekData = TRAINING_PLAN.find((w) => w.week === week);
-  return weekData.runs.every((_, i) => completed[runKey(week, i)]);
+  oldCard.replaceWith(buildWeekCard(weekData));
+}
+
+// ---------------------------------------------------------------
+// Completion
+// ---------------------------------------------------------------
+
+// Every session in the week — baseline AND any extras you've added.
+// Adding an extra to a finished week therefore un-finishes it, which is
+// the point: it's a session you've committed to, not a bonus.
+function weekSessionKeys(week) {
+  const weekData = TRAINING_PLAN.find((w) => w.week === week);
+  const keys = weekData ? weekData.runs.map((_, i) => runKey(week, i)) : [];
+  extrasForWeek(extras, week).forEach((e) => keys.push(extraKey(e.id)));
+  return keys;
+}
+
+function isWeekComplete(week) {
+  return weekSessionKeys(week).every((key) => completed[key]);
 }
 
 // ---------------------------------------------------------------
@@ -119,12 +257,12 @@ function computeStats() {
   let weeksDone = 0;
 
   TRAINING_PLAN.forEach((weekData) => {
-    runsTotal += weekData.runs.length;
+    const keys = weekSessionKeys(weekData.week);
+    runsTotal += keys.length;
     let weekAllDone = true;
 
-    weekData.runs.forEach((run, index) => {
-      const done = !!completed[runKey(weekData.week, index)];
-      if (done) {
+    keys.forEach((key) => {
+      if (completed[key]) {
         runsDone += 1;
       } else {
         weekAllDone = false;
@@ -175,19 +313,24 @@ function refreshUI() {
   // Update every run row + week card to reflect current state.
   document.querySelectorAll('.week-card').forEach((card) => {
     const week = Number(card.dataset.week);
-    const weekData = TRAINING_PLAN.find((w) => w.week === week);
     let doneCount = 0;
+    let total = 0;
 
     card.querySelectorAll('.run-row').forEach((row) => {
-      const index = Number(row.dataset.index);
-      const done = !!completed[runKey(week, index)];
+      // An extra row carries its own id; a baseline row carries its
+      // index into the week's `runs` array.
+      const key = row.dataset.extraId
+        ? extraKey(row.dataset.extraId)
+        : runKey(week, Number(row.dataset.index));
+      const done = !!completed[key];
       row.classList.toggle('is-done', done);
       row.setAttribute('aria-checked', String(done));
+      total += 1;
       if (done) doneCount += 1;
     });
 
-    card.classList.toggle('is-complete', doneCount === weekData.runs.length);
-    card.querySelector('.week-mini-count').textContent = `${doneCount}/${weekData.runs.length}`;
+    card.classList.toggle('is-complete', total > 0 && doneCount === total);
+    card.querySelector('.week-mini-count').textContent = `${doneCount}/${total}`;
   });
 }
 
@@ -223,7 +366,13 @@ function launchConfetti() {
 // ---------------------------------------------------------------
 
 document.getElementById('resetBtn').addEventListener('click', () => {
-  const ok = confirm('Reset all progress? This clears every ticked run and cannot be undone.');
+  // Deliberately only clears ticks. Extra sessions you've added stay
+  // put — they're part of your plan, not part of your progress, and
+  // there's a ✕ on each one for when you do want it gone.
+  const ok = confirm(
+    'Reset all progress? This clears every ticked session and cannot be undone.\n\n' +
+    'Extra upper body sessions you\'ve added are kept.'
+  );
   if (!ok) return;
   completed = {};
   saveProgress(completed);

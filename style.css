@@ -25,7 +25,7 @@
 
   /* ---- run-type badge colours (fixed order, never reassigned) ---- */
   --slot-blue:    #3987e5;   /* Long Run */
-  --slot-orange:  #f2793a;   /* Pace */
+  --slot-orange:  #f2793a;   /* Upper Body */
   --slot-aqua:    #21c894;   /* Easy */
   --slot-yellow:  #e6a916;   /* Tempo */
   --slot-red:     #ef5b5b;   /* Race Day */
@@ -319,6 +319,74 @@ body {
 .run-badge.slot-red     { background: rgba(239,91,91,0.16);   color: var(--slot-red); }
 .run-badge.slot-violet  { background: rgba(144,133,233,0.16); color: var(--slot-violet); }
 .run-badge.slot-neutral { background: rgba(139,144,160,0.16); color: var(--slot-neutral); }
+
+/* ===== Extra sessions (the ones added with "+ Upper body session") =====
+   Same row, plus an ordinal ("#2") and a ✕ to take it back off again.
+   Visually a touch quieter than the baseline rows so it stays obvious
+   which sessions are the plan and which ones you piled on top. */
+
+.run-row.is-extra .run-label { color: var(--text-secondary); }
+
+.run-ordinal {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.row-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1;
+  margin-left: 8px;
+  padding: 3px 5px;
+  border-radius: 6px;
+  cursor: pointer;
+  vertical-align: middle;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+/* Revealed on hover, but always present for keyboard and touch users —
+   :focus-visible covers tabbing, and coarse pointers get it permanently
+   since there's no hover to reveal it with. */
+.run-row:hover .row-remove,
+.row-remove:focus-visible {
+  opacity: 1;
+}
+
+.row-remove:hover {
+  color: var(--slot-red);
+  background: rgba(239, 91, 91, 0.12);
+}
+
+@media (hover: none) {
+  .row-remove { opacity: 1; }
+}
+
+.add-extra-btn {
+  margin-top: 6px;
+  width: 100%;
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.add-extra-btn:hover {
+  border-color: var(--slot-orange);
+  color: var(--slot-orange);
+  background: rgba(242, 121, 58, 0.06);
+}
 
 /* ===================== FOOTER / TOAST ===================== */
 
