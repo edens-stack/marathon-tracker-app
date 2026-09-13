@@ -28,6 +28,11 @@
 
 const CALENDAR_KEY = 'marathonTracker.calendarSessions.v1';
 
+// Set once realignSkippedWeeks() has run, so it never runs twice. It's a
+// repair for calendars written by one specific earlier version, not a
+// standing rule — see that function.
+const REALIGN_KEY = 'marathonTracker.calendarRealigned.v1';
+
 // Week 1's Monday. The whole calendar is laid out from here: week N's
 // Monday is this date + 7×(N-1) days.
 const WEEK1_MONDAY = '2026-08-17';
@@ -145,6 +150,40 @@ function mondayForWeek(weekNumber) {
   return addDaysISO(WEEK1_MONDAY, (weekNumber - 1) * 7);
 }
 
+// How far a training week has drifted from where it was originally laid
+// out — +7 for every "skip this week" applied at or before it, 0 for a
+// week that's never moved.
+//
+// This matters whenever a session has to be placed into a week that
+// already exists: dropping it on its pristine default day would land it
+// a week behind its own week-mates. `originalDate` is the pristine
+// placement and skipWeek only ever moves `scheduledDate`, so the gap
+// between the two IS the drift.
+//
+// Taken as the most common value rather than an average, so individual
+// cards you've dragged off on their own don't drag the answer with them.
+function weekShiftDays(list, weekNumber) {
+  const shifts = list
+    .filter((s) => s.weekNumber === weekNumber && s.originalDate)
+    .map((s) => daysBetweenISO(s.originalDate, s.scheduledDate));
+  if (!shifts.length) return 0;
+
+  const counts = new Map();
+  shifts.forEach((v) => counts.set(v, (counts.get(v) || 0) + 1));
+
+  let best = 0;
+  let bestCount = -1;
+  counts.forEach((count, value) => {
+    // Ties break towards the smaller shift, purely so the result is
+    // deterministic rather than dependent on insertion order.
+    if (count > bestCount || (count === bestCount && value < best)) {
+      best = value;
+      bestCount = count;
+    }
+  });
+  return best;
+}
+
 // Merge what's saved with what should exist:
 //   - a session that's saved AND expected keeps the date you dragged it to
 //   - a session that's expected but not saved is added at its default slot
@@ -163,7 +202,13 @@ function syncCalendarSessions(saved) {
     const have = savedById.get(want.id);
     if (!have) {
       changed = true;
-      return want;
+      // A session appearing for the first time in a week that's already
+      // been pushed back has to be pushed back with it — otherwise it
+      // lands a week clear of the sessions it belongs with.
+      const shift = weekShiftDays(saved, want.weekNumber);
+      return shift
+        ? { ...want, scheduledDate: addDaysISO(want.scheduledDate, shift) }
+        : want;
     }
     // Keep the saved placement, but take everything else from `want` so
     // fields added in later versions (extraId) get filled in.
@@ -171,6 +216,41 @@ function syncCalendarSessions(saved) {
   });
 
   return changed ? merged : null;
+}
+
+// ONE-TIME REPAIR.
+//
+// The version that introduced upper body sessions back-filled them into
+// existing calendars at their pristine default day, without accounting
+// for any "skip this week" already applied. On a calendar with a skip in
+// it, that left every new session sitting a week clear of the ones it
+// belongs with.
+//
+// This moves them back into line. A session only qualifies if it's still
+// sitting exactly on its `originalDate` — i.e. you have never dragged it
+// — so nothing you've deliberately placed is touched. It runs once and
+// then records that it has: as a standing rule it would keep yanking
+// back any session you'd chosen to leave on its default day.
+function realignSkippedWeeks(list) {
+  if (localStorage.getItem(REALIGN_KEY)) return null;
+
+  let changed = false;
+  const realigned = list.map((session) => {
+    if (!session.originalDate || session.scheduledDate !== session.originalDate) return session;
+    // The session's own 0 is in this tally, which is what we want: it
+    // only loses to a shift the REST of the week agrees on.
+    const shift = weekShiftDays(list, session.weekNumber);
+    if (!shift) return session;
+    changed = true;
+    return { ...session, scheduledDate: addDaysISO(session.scheduledDate, shift) };
+  });
+
+  try {
+    localStorage.setItem(REALIGN_KEY, '1');
+  } catch (err) {
+    console.warn('Could not record the calendar realign.', err);
+  }
+  return changed ? realigned : null;
 }
 
 function loadCalendarSessions() {
@@ -185,12 +265,26 @@ function loadCalendarSessions() {
   if (!Array.isArray(saved)) {
     const generated = expectedSessions();
     saveCalendarSessions(generated);
+    // Nothing to repair on a calendar being created right now.
+    try {
+      localStorage.setItem(REALIGN_KEY, '1');
+    } catch (err) { /* not worth failing a fresh calendar over */ }
     return generated;
   }
 
-  const synced = syncCalendarSessions(saved);
-  if (synced) saveCalendarSessions(synced);
-  return synced || saved;
+  // Sync first so anything missing exists, then repair — the sessions
+  // most likely to need repairing are the ones an earlier version added.
+  let list = syncCalendarSessions(saved) || saved;
+  let changed = list !== saved;
+
+  const realigned = realignSkippedWeeks(list);
+  if (realigned) {
+    list = realigned;
+    changed = true;
+  }
+
+  if (changed) saveCalendarSessions(list);
+  return list;
 }
 
 function saveCalendarSessions(list) {
@@ -439,7 +533,9 @@ function addExtraToBlock(monday, type) {
     weekNumber: extra.week,
     extraId: extra.id,
     scheduledDate: date,
-    originalDate: date,
+    // Where it WOULD have gone on an unskipped calendar, so it reports
+    // the same drift as the rest of its week rather than a drift of 0.
+    originalDate: addDaysISO(mondayForWeek(extra.week), EXTRA_PLACEMENT),
   });
   saveCalendarSessions(sessions);
   renderCalendar();
